@@ -11,6 +11,7 @@ const NO_CACHE_HEADERS = {
 export async function GET() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5_000);
+  const startedAt = performance.now();
 
   try {
     await fetch("http://41.242.17.31", {
@@ -19,9 +20,11 @@ export async function GET() {
       signal: controller.signal,
     });
 
-    return NextResponse.json({ online: true }, { headers: NO_CACHE_HEADERS });
+    const ping = Math.round(performance.now() - startedAt);
+
+    return NextResponse.json({ online: true, ping }, { headers: NO_CACHE_HEADERS });
   } catch {
-    return NextResponse.json({ online: false }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ online: false, ping: null }, { headers: NO_CACHE_HEADERS });
   } finally {
     clearTimeout(timeoutId);
   }

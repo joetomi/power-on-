@@ -26,8 +26,41 @@ main {
   background: #000;
 }
 
+.monitor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.25rem, 3vmin, 2rem);
+}
+
+.power-label,
+.ping {
+  margin: 0;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+.power-label {
+  font-size: clamp(1.5rem, 5vmin, 2.75rem);
+  font-weight: 700;
+  transition: color 600ms ease;
+}
+
+.text-online {
+  color: #00c853;
+}
+
+.text-offline {
+  color: #e00000;
+}
+
+.ping {
+  font-size: clamp(1rem, 3.5vmin, 1.5rem);
+}
+
 .status {
-  width: clamp(12rem, 42vmin, 28rem);
+  width: clamp(10rem, 36vmin, 24rem);
   aspect-ratio: 1;
   border-radius: 50%;
   transition: background-color 600ms ease;
