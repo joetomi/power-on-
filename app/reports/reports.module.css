@@ -70,6 +70,12 @@
   background: #20d879;
 }
 
+.excelButton {
+  border: 1px solid #148347;
+  color: #dff8e9;
+  background: #0c4d2a;
+}
+
 .secondaryButton {
   border: 1px solid #30363d;
   color: #eef1f4;
@@ -84,6 +90,100 @@
   color: #ff9aa4;
   background: rgba(255, 77, 95, 0.08);
   font-size: 0.86rem;
+}
+
+.liveStatus {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #262c32;
+  border-radius: 1rem;
+  background: rgba(16, 19, 23, 0.9);
+  transition: border-color 400ms ease;
+}
+
+.livePulse {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background: #7b838d;
+  box-shadow: 0 0 0 0 rgba(123, 131, 141, 0.45);
+  animation: livePulse 2s ease-out infinite;
+}
+
+.liveOnline {
+  border-color: rgba(33, 217, 120, 0.25);
+}
+
+.liveChecking {
+  border-color: rgba(123, 131, 141, 0.28);
+}
+
+.liveOnline .livePulse {
+  background: #21d978;
+  box-shadow: 0 0 0.8rem rgba(33, 217, 120, 0.8);
+}
+
+.liveOffline {
+  border-color: rgba(255, 77, 95, 0.28);
+}
+
+.liveOffline .livePulse {
+  background: #ff4d5f;
+  box-shadow: 0 0 0.8rem rgba(255, 77, 95, 0.7);
+}
+
+.liveCopy,
+.refreshTime {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.liveCopy span,
+.refreshTime span {
+  color: #747c86;
+  font-size: 0.68rem;
+}
+
+.liveCopy strong,
+.refreshTime strong {
+  color: #eef1f4;
+  font-size: 0.84rem;
+}
+
+.liveOnline .liveCopy strong {
+  color: #52dc91;
+}
+
+.liveOffline .liveCopy strong {
+  color: #ff8793;
+}
+
+.refreshTime {
+  min-width: 11rem;
+  padding-right: 1rem;
+  border-right: 1px solid #282e34;
+}
+
+.refreshTime strong {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes livePulse {
+  0% {
+    transform: scale(0.92);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(0.92);
+  }
 }
 
 .stats {
@@ -252,6 +352,17 @@
     flex: 1;
   }
 
+  .liveStatus {
+    grid-template-columns: auto 1fr;
+  }
+
+  .refreshTime {
+    grid-column: 2;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
   .stats {
     grid-template-columns: 1fr 1fr;
   }
@@ -276,6 +387,10 @@
 
   .actions {
     flex-direction: column;
+  }
+
+  .liveStatus {
+    align-items: start;
   }
 }
 
@@ -305,6 +420,24 @@
 
   .header {
     margin-bottom: 1.25rem;
+  }
+
+  .liveStatus {
+    break-inside: avoid;
+    border-color: #ccc;
+    background: #fff;
+  }
+
+  .liveCopy strong,
+  .refreshTime strong,
+  .liveOnline .liveCopy strong,
+  .liveOffline .liveCopy strong {
+    color: #111;
+  }
+
+  .livePulse {
+    box-shadow: none;
+    animation: none;
   }
 
   .stats {
