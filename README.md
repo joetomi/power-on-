@@ -10,7 +10,7 @@ copy .env.example .env.local
 npm run dev
 ```
 
-ضع رمز Vercel Blob في `.env.local`:
+للتشغيل المحلي خارج Vercel، ضع رمز Vercel Blob في `.env.local`:
 
 ```env
 BLOB_READ_WRITE_TOKEN=your_token_here
@@ -24,8 +24,9 @@ BLOB_READ_WRITE_TOKEN=your_token_here
 2. انتقل إلى **Storage** ثم أنشئ **Blob Store** جديدًا.
 3. اختر **Private** كنوع الوصول.
 4. اربط الـ Blob Store بالمشروع وبيئات Production وPreview المطلوبة.
-5. يضيف Vercel المتغير `BLOB_READ_WRITE_TOKEN` تلقائيًا عند ربط التخزين بالمشروع. إذا لم يظهر، انسخ الرمز من إعدادات Blob وأضفه في **Settings → Environment Variables**.
-6. أعد نشر المشروع بعد إضافة المتغير.
+5. عند التشغيل على Vercel يستخدم SDK مصادقة OIDC القصيرة العمر تلقائيًا. يضيف الربط معرّف المتجر باسم `BLOB_STORE_ID` أو باسم المتغير الظاهر في Quickstart مثل `BLOB_READ_WRITE_TOKEN_STORE_ID`، ويدعم المشروع الاسمين.
+6. لا تحتاج إلى إضافة `BLOB_READ_WRITE_TOKEN` يدويًا في Production عند عمل ربط OIDC الحديث. يبقى الرمز الطويل مفيدًا للتشغيل المحلي فقط.
+7. أعد نشر المشروع بعد ربط Blob Store.
 
 لا تضع قيمة الرمز في Git أو في أي متغير يبدأ بـ `NEXT_PUBLIC_`.
 

@@ -10,6 +10,14 @@ import type { RouterEvent, RouterEventType } from "./event-types";
 const EVENTS_PATH = "events.json";
 const MAX_WRITE_ATTEMPTS = 4;
 
+const getStoreOptions = () => {
+  const storeId =
+    process.env.BLOB_STORE_ID ??
+    process.env.BLOB_READ_WRITE_TOKEN_STORE_ID;
+
+  return storeId ? { storeId } : {};
+};
+
 interface EventStoreFile {
   version: 1;
   confirmedState: boolean | null;
@@ -30,12 +38,6 @@ const createEmptyStore = (): EventStoreFile => ({
   consecutiveFailures: 0,
   events: [],
 });
-
-function assertBlobConfigured() {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is not configured.");
-  }
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -106,11 +108,10 @@ function normalizeStore(value: unknown): EventStoreFile {
 }
 
 async function readStore(): Promise<StoreSnapshot> {
-  assertBlobConfigured();
-
   const result = await get(EVENTS_PATH, {
     access: "private",
     useCache: false,
+    ...getStoreOptions(),
   });
 
   if (!result) {
@@ -135,6 +136,7 @@ async function writeStore(data: EventStoreFile, etag: string | null) {
     allowOverwrite: etag !== null,
     cacheControlMaxAge: 60,
     contentType: "application/json; charset=utf-8",
+    ...getStoreOptions(),
     ...(etag ? { ifMatch: etag } : {}),
   });
 }
