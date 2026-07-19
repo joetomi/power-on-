@@ -1,0 +1,42 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: #000;
+}
+
+body {
+  overflow: hidden;
+}
+
+main {
+  display: grid;
+  width: 100%;
+  min-height: 100dvh;
+  place-items: center;
+  background: #000;
+}
+
+.status {
+  width: clamp(12rem, 42vmin, 28rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transition: background-color 600ms ease;
+}
+
+.online {
+  background-color: #00c853;
+}
+
+.offline {
+  background-color: #e00000;
+}
