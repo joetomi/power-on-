@@ -9,6 +9,8 @@ import type { RouterEvent, RouterEventType } from "./event-types";
 
 const EVENTS_PATH = "events.json";
 const MAX_WRITE_ATTEMPTS = 4;
+const OUTAGE_CONFIRMATION_MS = 10 * 60 * 1_000;
+const ONLINE_SUCCESS_THRESHOLD = 3;
 
 const getStoreOptions = () => {
   const storeId =
@@ -23,6 +25,7 @@ interface EventStoreFile {
   confirmedState: boolean | null;
   consecutiveSuccesses: number;
   consecutiveFailures: number;
+  failureStartedAtMs: number | null;
   events: RouterEvent[];
 }
 
@@ -36,6 +39,7 @@ const createEmptyStore = (): EventStoreFile => ({
   confirmedState: null,
   consecutiveSuccesses: 0,
   consecutiveFailures: 0,
+  failureStartedAtMs: null,
   events: [],
 });
 
@@ -78,6 +82,12 @@ function normalizeCounter(value: unknown, maximum: number) {
   return Math.min(Math.max(Math.trunc(value), 0), maximum);
 }
 
+function normalizeTimestamp(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
 function normalizeStore(value: unknown): EventStoreFile {
   const events = normalizeEvents(Array.isArray(value) ? value : isRecord(value) ? value.events : []);
 
@@ -101,8 +111,12 @@ function normalizeStore(value: unknown): EventStoreFile {
   return {
     version: 1,
     confirmedState,
-    consecutiveSuccesses: normalizeCounter(value.consecutiveSuccesses, 2),
-    consecutiveFailures: normalizeCounter(value.consecutiveFailures, 3),
+    consecutiveSuccesses: normalizeCounter(
+      value.consecutiveSuccesses,
+      ONLINE_SUCCESS_THRESHOLD,
+    ),
+    consecutiveFailures: normalizeCounter(value.consecutiveFailures, 1),
+    failureStartedAtMs: normalizeTimestamp(value.failureStartedAtMs),
     events,
   };
 }
@@ -171,20 +185,30 @@ function applySample(
 
   if (current.confirmedState === null) {
     if (sampleOnline) {
-      next.consecutiveSuccesses = Math.min(current.consecutiveSuccesses + 1, 2);
+      next.consecutiveSuccesses = Math.min(
+        current.consecutiveSuccesses + 1,
+        ONLINE_SUCCESS_THRESHOLD,
+      );
       next.consecutiveFailures = 0;
+      next.failureStartedAtMs = null;
 
-      if (next.consecutiveSuccesses >= 2) {
+      if (next.consecutiveSuccesses >= ONLINE_SUCCESS_THRESHOLD) {
         next.confirmedState = true;
         next.events = addTransitionEvent(next.events, "online", timestampMs);
       }
     } else {
-      next.consecutiveFailures = Math.min(current.consecutiveFailures + 1, 3);
       next.consecutiveSuccesses = 0;
+      next.consecutiveFailures = 1;
+      next.failureStartedAtMs = current.failureStartedAtMs ?? timestampMs;
 
-      if (next.consecutiveFailures >= 3) {
+      if (timestampMs - next.failureStartedAtMs >= OUTAGE_CONFIRMATION_MS) {
         next.confirmedState = false;
-        next.events = addTransitionEvent(next.events, "offline", timestampMs);
+        next.events = addTransitionEvent(
+          next.events,
+          "offline",
+          next.failureStartedAtMs,
+        );
+        next.failureStartedAtMs = null;
       }
     }
 
@@ -201,17 +225,24 @@ function applySample(
 
   if (current.confirmedState) {
     if (sampleOnline) {
-      next.consecutiveSuccesses = 2;
+      next.consecutiveSuccesses = ONLINE_SUCCESS_THRESHOLD;
       next.consecutiveFailures = 0;
+      next.failureStartedAtMs = null;
       return next;
     }
 
     next.consecutiveSuccesses = 0;
-    next.consecutiveFailures = Math.min(current.consecutiveFailures + 1, 3);
+    next.consecutiveFailures = 1;
+    next.failureStartedAtMs = current.failureStartedAtMs ?? timestampMs;
 
-    if (next.consecutiveFailures >= 3) {
+    if (timestampMs - next.failureStartedAtMs >= OUTAGE_CONFIRMATION_MS) {
       next.confirmedState = false;
-      next.events = addTransitionEvent(next.events, "offline", timestampMs);
+      next.events = addTransitionEvent(
+        next.events,
+        "offline",
+        next.failureStartedAtMs,
+      );
+      next.failureStartedAtMs = null;
     }
 
     return next;
@@ -219,14 +250,19 @@ function applySample(
 
   if (!sampleOnline) {
     next.consecutiveSuccesses = 0;
-    next.consecutiveFailures = 3;
+    next.consecutiveFailures = 0;
+    next.failureStartedAtMs = null;
     return next;
   }
 
   next.consecutiveFailures = 0;
-  next.consecutiveSuccesses = Math.min(current.consecutiveSuccesses + 1, 2);
+  next.failureStartedAtMs = null;
+  next.consecutiveSuccesses = Math.min(
+    current.consecutiveSuccesses + 1,
+    ONLINE_SUCCESS_THRESHOLD,
+  );
 
-  if (next.consecutiveSuccesses >= 2) {
+  if (next.consecutiveSuccesses >= ONLINE_SUCCESS_THRESHOLD) {
     next.confirmedState = true;
     next.events = addTransitionEvent(next.events, "online", timestampMs);
   }
