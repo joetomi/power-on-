@@ -14,6 +14,10 @@ body {
   background: #080a0d;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: Arial, Tahoma, sans-serif;
 }
@@ -33,11 +37,9 @@ a {
   --accent: #f4b73f;
   --accent-rgb: 244, 183, 63;
   position: relative;
-  display: grid;
+  display: block;
   min-height: 100svh;
-  overflow: hidden;
-  padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem
-    max(1.25rem, env(safe-area-inset-bottom));
+  overflow-x: hidden;
   color: #f4f6f8;
   background:
     radial-gradient(circle at 20% 15%, rgba(40, 72, 104, 0.13), transparent 25rem),
@@ -70,7 +72,7 @@ a {
 .control-glow {
   position: absolute;
   z-index: -1;
-  top: 50%;
+  top: 30rem;
   left: 50%;
   width: min(52rem, 85vw);
   height: min(35rem, 70vh);
@@ -87,6 +89,8 @@ a {
   width: min(100%, 74rem);
   min-height: calc(100svh - 2.5rem);
   margin: 0 auto;
+  padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem
+    max(1.25rem, env(safe-area-inset-bottom));
   flex-direction: column;
 }
 
@@ -607,12 +611,9 @@ a {
 }
 
 @media (max-width: 540px) {
-  .control-page {
+  .control-shell {
     padding: max(0.85rem, env(safe-area-inset-top)) 0.85rem
       max(0.85rem, env(safe-area-inset-bottom));
-  }
-
-  .control-shell {
     min-height: calc(100svh - 1.7rem);
   }
 
@@ -715,5 +716,17 @@ a {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .control-page {
+    background: #fff;
+  }
+
+  .control-shell,
+  .control-grid,
+  .control-glow {
+    display: none !important;
   }
 }

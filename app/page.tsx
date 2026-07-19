@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import ReportsPanel from "./components/reports-panel";
+import type { RouterEvent } from "@/lib/event-types";
 
 type PowerState = "checking" | "online" | "offline";
 
@@ -28,6 +29,11 @@ export default function Home() {
   const [ping, setPing] = useState<number | null>(null);
   const [lastChecked, setLastChecked] = useState<string | null>(null);
   const [cycle, setCycle] = useState(0);
+  const [events, setEvents] = useState<RouterEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let active = true;
@@ -49,31 +55,67 @@ export default function Home() {
         const isOnline = response.ok && data.online === true;
         setPowerState(isOnline ? "online" : "offline");
         setPing(isOnline && typeof data.ping === "number" ? data.ping : null);
+        setLastRefresh(Date.now());
       } catch {
         if (!active) return;
         setPowerState("offline");
         setPing(null);
-      } finally {
+      }
+
+      try {
+        const historyResponse = await fetch("/api/history", {
+          cache: "no-store",
+          signal: requestController.signal,
+        });
+        const historyData: { events?: unknown } = await historyResponse.json();
+
+        if (!historyResponse.ok) throw new Error("History is unavailable.");
+        if (!active) return;
+
+        const validEvents = Array.isArray(historyData.events)
+          ? historyData.events.filter((event): event is RouterEvent => {
+              if (typeof event !== "object" || event === null) return false;
+              const candidate = event as Partial<RouterEvent>;
+              return (
+                (candidate.type === "online" || candidate.type === "offline") &&
+                typeof candidate.timestamp === "string" &&
+                typeof candidate.timestampMs === "number" &&
+                Number.isFinite(candidate.timestampMs)
+              );
+            })
+          : [];
+
+        setEvents(validEvents);
+        setHistoryError(false);
+        setHistoryLoading(false);
+      } catch {
         if (active) {
-          setLastChecked(
-            new Intl.DateTimeFormat("ar-LY", {
-              timeZone: "Africa/Tripoli",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            }).format(new Date()),
-          );
-          setCycle((current) => current + 1);
-          timeoutId = window.setTimeout(checkStatus, 5_000);
+          setHistoryError(true);
+          setHistoryLoading(false);
         }
+      } finally {
+        if (!active) return;
+
+        setLastChecked(
+          new Intl.DateTimeFormat("ar-LY", {
+            timeZone: "Africa/Tripoli",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }).format(new Date()),
+        );
+        setCycle((current) => current + 1);
+        timeoutId = window.setTimeout(checkStatus, 5_000);
       }
     };
 
     void checkStatus();
+    const clockId = window.setInterval(() => setNow(Date.now()), 1_000);
 
     return () => {
       active = false;
       requestController?.abort();
+      window.clearInterval(clockId);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
   }, []);
@@ -99,10 +141,10 @@ export default function Home() {
             </div>
           </div>
 
-          <Link className="reports-link" href="/reports">
+          <a className="reports-link" href="#reports">
             <span>عرض التقارير</span>
             <span className="link-arrow" aria-hidden="true">←</span>
-          </Link>
+          </a>
         </header>
 
         <section className="power-console" aria-live="polite" aria-atomic="true">
@@ -169,6 +211,15 @@ export default function Home() {
           <span>توقيت طرابلس</span>
         </footer>
       </div>
+
+      <ReportsPanel
+        events={events}
+        loading={historyLoading}
+        error={historyError}
+        connectionOnline={powerState === "checking" ? null : powerState === "online"}
+        lastRefresh={lastRefresh}
+        now={now}
+      />
     </main>
   );
 }

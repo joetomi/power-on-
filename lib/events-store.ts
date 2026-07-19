@@ -176,6 +176,7 @@ function applySample(
 
       if (next.consecutiveSuccesses >= 2) {
         next.confirmedState = true;
+        next.events = addTransitionEvent(next.events, "online", timestampMs);
       }
     } else {
       next.consecutiveFailures = Math.min(current.consecutiveFailures + 1, 3);
@@ -183,10 +184,19 @@ function applySample(
 
       if (next.consecutiveFailures >= 3) {
         next.confirmedState = false;
+        next.events = addTransitionEvent(next.events, "offline", timestampMs);
       }
     }
 
     return next;
+  }
+
+  if (current.events.length === 0) {
+    next.events = addTransitionEvent(
+      next.events,
+      current.confirmedState ? "online" : "offline",
+      timestampMs,
+    );
   }
 
   if (current.confirmedState) {
