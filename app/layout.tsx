@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "مراقبة اتصال الراوتر",
-  description: "مراقبة حالة اتصال الراوتر وسجل أوقات الانقطاع.",
+  title: "لوحة مراقبة الطاقة",
+  description: "لوحة تحكم مباشرة لمراقبة حالة الكهرباء واتصال الراوتر.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
