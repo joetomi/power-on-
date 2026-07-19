@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordRouterSample } from "@/lib/events-store";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,8 @@ export async function GET() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5_000);
   const startedAt = performance.now();
+  let sampleOnline = false;
+  let ping: number | null = null;
 
   try {
     await fetch("http://41.242.17.31", {
@@ -20,12 +23,25 @@ export async function GET() {
       signal: controller.signal,
     });
 
-    const ping = Math.round(performance.now() - startedAt);
-
-    return NextResponse.json({ online: true, ping }, { headers: NO_CACHE_HEADERS });
+    sampleOnline = true;
+    ping = Math.round(performance.now() - startedAt);
   } catch {
-    return NextResponse.json({ online: false, ping: null }, { headers: NO_CACHE_HEADERS });
+    sampleOnline = false;
   } finally {
     clearTimeout(timeoutId);
   }
+
+  let confirmedOnline = sampleOnline;
+
+  try {
+    const confirmedState = await recordRouterSample(sampleOnline);
+    confirmedOnline = confirmedState.online;
+  } catch {
+    // Keep the live indicator operational if Blob is not configured or unavailable.
+  }
+
+  return NextResponse.json(
+    { online: confirmedOnline, ping: confirmedOnline ? ping : null },
+    { headers: NO_CACHE_HEADERS },
+  );
 }
